@@ -5,6 +5,7 @@ Gotov MVP sajt za:
 - direktorijum auto-servisa
 - javne profile servisa
 - recenzije sa moderacijom
+- zahtevi za online zakazivanje termina
 - informativne tekstove za vlasnike vozila
 - bazu modela vozila i poznatih problema
 - admin panel za unos i izmenu podataka
@@ -39,6 +40,7 @@ Podrazumevani admin pristup:
 3. U sekciji `Saveti` dodaj tekstove.
 4. U sekciji `Modeli` popuni bazu vozila.
 5. U sekciji `Recenzije` odobri korisnicke recenzije koje stignu sa javnog sajta.
+6. U sekciji `Termini` potvrdi, odbij ili zatvori zahteve za zakazivanje.
 
 ## Napomene
 
@@ -50,5 +52,5 @@ Podrazumevani admin pristup:
 
 - korisnicki nalozi
 - claim profil za servise
-- online zakazivanje termina
+- raspored slobodnih termina po servisu
 - oglasi i dodatna monetizacija

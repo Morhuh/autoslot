@@ -29,6 +29,10 @@
           <span>{{.Service.ReviewCount}} recenzija</span>
           <span>{{.Service.WorkingHours}}</span>
         </div>
+        <div class="hero-actions">
+          <a class="button-secondary" href="#booking">Zakazi termin</a>
+          <a class="button-ghost" href="#reviews">Procitaj recenzije</a>
+        </div>
         <div class="tags">{{range .Service.Brands}}<span>{{.}}</span>{{end}}{{range .Service.Amenities}}<span>{{.}}</span>{{end}}</div>
       </div>
     </section>
@@ -60,7 +64,7 @@
     </section>
     {{end}}
 
-    <section class="reviews-block">
+    <section class="reviews-block" id="reviews">
       <div class="section-head">
         <div>
           <span class="eyebrow">Recenzije</span>
@@ -105,6 +109,32 @@
           <button type="submit">Posalji recenziju</button>
         </form>
       </div>
+    </section>
+
+    <section class="booking-section" id="booking">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Online zakazivanje</span>
+          <h2>Posalji zahtev za termin</h2>
+        </div>
+      </div>
+      <form class="card review-form booking-form" action="/services/{{.Service.Slug}}/appointments" method="post">
+        {{if .AppointmentSubmitted}}<p class="notice">Zahtev je poslat. Servis sada moze da ga potvrdi ili odbije iz admin panela.</p>{{end}}
+        <div class="filters-grid">
+          <label>Ime i prezime<input type="text" name="customer_name" required></label>
+          <label>Telefon<input type="text" name="phone" required></label>
+          <label>Email<input type="email" name="email"></label>
+          <label>Marka vozila<input type="text" name="vehicle_brand"></label>
+          <label>Model vozila<input type="text" name="vehicle_model"></label>
+          <label>Godiste<input type="text" name="vehicle_year"></label>
+          <label>Termin / datum<input type="text" name="requested_date" placeholder="npr. 2026-03-20 09:30" required></label>
+          <label>Vrsta usluge
+            <input type="text" name="service_request" placeholder="npr. mali servis, dijagnostika" required>
+          </label>
+        </div>
+        <label>Opis problema ili napomena<textarea name="issue_details" rows="5"></textarea></label>
+        <button type="submit">Posalji zahtev za termin</button>
+      </form>
     </section>
   </main>
 </body>

@@ -22,6 +22,11 @@
       <span class="eyebrow">Direktorijum</span>
       <h1>Auto-servisi</h1>
       <p>Filtriraj po gradu, marki, tipu usluge i minimalnoj oceni.</p>
+      <div class="meta-line">
+        <span>Ocene korisnika</span>
+        <span>Specijalizacije po marki</span>
+        <span>Direktan zahtev za termin</span>
+      </div>
     </section>
     <section class="filters card">
       <form class="filters-grid" method="get" action="/services">
@@ -60,7 +65,10 @@
           <p>{{.Description}}</p>
           <p><strong>Specijalnost:</strong> {{.Specialties}}</p>
           <div class="tags">{{range .Offerings}}<span>{{.Name}}</span>{{end}}</div>
-          <a class="button-secondary" href="/services/{{.Slug}}">Detalji servisa</a>
+          <div class="hero-actions">
+            <a class="button-secondary" href="/services/{{.Slug}}">Detalji servisa</a>
+            <a class="button-ghost" href="/services/{{.Slug}}#booking">Zakazi</a>
+          </div>
         </div>
       </article>
       {{else}}

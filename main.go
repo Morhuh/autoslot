@@ -72,6 +72,23 @@ type Review struct {
 	CreatedAt      time.Time
 }
 
+type Appointment struct {
+	ID             int
+	ServiceID      int
+	ServiceName    string
+	CustomerName   string
+	Phone          string
+	Email          string
+	VehicleBrand   string
+	VehicleModel   string
+	VehicleYear    string
+	RequestedDate  string
+	ServiceRequest string
+	IssueDetails   string
+	Status         string
+	CreatedAt      time.Time
+}
+
 type Article struct {
 	ID          int
 	Slug        string
@@ -129,6 +146,7 @@ type ServicePageData struct {
 	Title           string
 	Service         Service
 	ReviewSubmitted bool
+	AppointmentSubmitted bool
 }
 
 type ArticlesPageData struct {
@@ -161,6 +179,7 @@ type AdminPageData struct {
 	Articles       []Article
 	Models         []CarModel
 	Reviews        []Review
+	Appointments   []Appointment
 	EditService    Service
 	EditArticle    Article
 	EditModel      CarModel
@@ -170,6 +189,7 @@ type AdminPageData struct {
 	ArticleCount   int
 	ModelCount     int
 	PendingReviews int
+	PendingAppointments int
 }
 
 func main() {
@@ -323,6 +343,10 @@ func (a *App) handleServiceRoutes(w http.ResponseWriter, r *http.Request) {
 		a.handleReviewSubmit(w, r, slug)
 		return
 	}
+	if len(parts) == 2 && parts[1] == "appointments" && r.Method == http.MethodPost {
+		a.handleAppointmentSubmit(w, r, slug)
+		return
+	}
 
 	http.NotFound(w, r)
 }
@@ -337,6 +361,7 @@ func (a *App) handleServiceDetail(w http.ResponseWriter, r *http.Request, slug s
 		Title:           service.Name,
 		Service:         service,
 		ReviewSubmitted: r.URL.Query().Get("review") == "submitted",
+		AppointmentSubmitted: r.URL.Query().Get("appointment") == "submitted",
 	})
 }
 
@@ -388,6 +413,50 @@ func (a *App) handleReviewSubmit(w http.ResponseWriter, r *http.Request, slug st
 	}
 
 	http.Redirect(w, r, "/services/"+slug+"?review=submitted", http.StatusSeeOther)
+}
+
+func (a *App) handleAppointmentSubmit(w http.ResponseWriter, r *http.Request, slug string) {
+	service, err := a.getServiceBySlug(slug, false)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "neispravan formular", http.StatusBadRequest)
+		return
+	}
+
+	req := Appointment{
+		ServiceID:      service.ID,
+		CustomerName:   strings.TrimSpace(r.FormValue("customer_name")),
+		Phone:          strings.TrimSpace(r.FormValue("phone")),
+		Email:          strings.TrimSpace(r.FormValue("email")),
+		VehicleBrand:   strings.TrimSpace(r.FormValue("vehicle_brand")),
+		VehicleModel:   strings.TrimSpace(r.FormValue("vehicle_model")),
+		VehicleYear:    strings.TrimSpace(r.FormValue("vehicle_year")),
+		RequestedDate:  strings.TrimSpace(r.FormValue("requested_date")),
+		ServiceRequest: strings.TrimSpace(r.FormValue("service_request")),
+		IssueDetails:   strings.TrimSpace(r.FormValue("issue_details")),
+	}
+	if req.CustomerName == "" || req.Phone == "" || req.RequestedDate == "" || req.ServiceRequest == "" {
+		http.Redirect(w, r, "/services/"+slug, http.StatusSeeOther)
+		return
+	}
+
+	_, err = a.db.Exec(`
+		INSERT INTO appointments (
+			service_id, customer_name, phone, email, vehicle_brand, vehicle_model, vehicle_year,
+			requested_date, service_request, issue_details, status, created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', CURRENT_TIMESTAMP)
+	`, req.ServiceID, req.CustomerName, req.Phone, req.Email, req.VehicleBrand, req.VehicleModel, req.VehicleYear,
+		req.RequestedDate, req.ServiceRequest, req.IssueDetails)
+	if err != nil {
+		http.Error(w, "greska pri slanju zahteva", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/services/"+slug+"?appointment=submitted", http.StatusSeeOther)
 }
 
 func (a *App) handleArticles(w http.ResponseWriter, r *http.Request) {
@@ -479,6 +548,10 @@ func (a *App) handleAdminRoutes(w http.ResponseWriter, r *http.Request) {
 		a.handleAdminReviews(w, r)
 	case strings.HasPrefix(path, "reviews/") && r.Method == http.MethodPost:
 		a.handleAdminReviewAction(w, r, strings.TrimPrefix(path, "reviews/"))
+	case path == "appointments" && r.Method == http.MethodGet:
+		a.handleAdminAppointments(w, r)
+	case strings.HasPrefix(path, "appointments/") && r.Method == http.MethodPost:
+		a.handleAdminAppointmentAction(w, r, strings.TrimPrefix(path, "appointments/"))
 	default:
 		http.NotFound(w, r)
 	}
@@ -735,6 +808,36 @@ func (a *App) handleAdminReviews(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "admin_reviews.html", data)
 }
 
+func (a *App) handleAdminAppointments(w http.ResponseWriter, r *http.Request) {
+	rows, err := a.db.Query(`
+		SELECT ap.id, ap.service_id, s.name, ap.customer_name, ap.phone, ap.email, ap.vehicle_brand,
+			ap.vehicle_model, ap.vehicle_year, ap.requested_date, ap.service_request, ap.issue_details,
+			ap.status, ap.created_at
+		FROM appointments ap
+		JOIN services s ON s.id = ap.service_id
+		ORDER BY ap.created_at DESC
+	`)
+	if err != nil {
+		http.Error(w, "greska pri ucitavanju zahteva", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var appointments []Appointment
+	for rows.Next() {
+		var item Appointment
+		if err := rows.Scan(&item.ID, &item.ServiceID, &item.ServiceName, &item.CustomerName, &item.Phone,
+			&item.Email, &item.VehicleBrand, &item.VehicleModel, &item.VehicleYear, &item.RequestedDate,
+			&item.ServiceRequest, &item.IssueDetails, &item.Status, &item.CreatedAt); err == nil {
+			appointments = append(appointments, item)
+		}
+	}
+
+	data := a.adminData("appointments", r.URL.Query().Get("msg"))
+	data.Appointments = appointments
+	a.render(w, "admin_appointments.html", data)
+}
+
 func (a *App) handleAdminReviewAction(w http.ResponseWriter, r *http.Request, path string) {
 	id := parseInt(strings.Trim(path, "/"))
 	if id == 0 {
@@ -758,6 +861,27 @@ func (a *App) handleAdminReviewAction(w http.ResponseWriter, r *http.Request, pa
 	http.Redirect(w, r, "/admin/reviews?msg=Recenzija+je+azurirana", http.StatusSeeOther)
 }
 
+func (a *App) handleAdminAppointmentAction(w http.ResponseWriter, r *http.Request, path string) {
+	id := parseInt(strings.Trim(path, "/"))
+	if id == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	status := strings.TrimSpace(r.FormValue("status"))
+	switch status {
+	case "confirmed", "rejected", "completed", "new":
+	default:
+		status = "new"
+	}
+
+	if _, err := a.db.Exec(`UPDATE appointments SET status=? WHERE id=?`, status, id); err != nil {
+		http.Redirect(w, r, "/admin/appointments?msg=Greska+pri+izmeni+zahteva", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/appointments?msg=Zahtev+je+azuriran", http.StatusSeeOther)
+}
+
 func (a *App) adminData(section, message string) AdminPageData {
 	data := AdminPageData{
 		Title:   "Admin panel",
@@ -769,6 +893,7 @@ func (a *App) adminData(section, message string) AdminPageData {
 	_ = a.db.QueryRow(`SELECT COUNT(*) FROM articles`).Scan(&data.ArticleCount)
 	_ = a.db.QueryRow(`SELECT COUNT(*) FROM models`).Scan(&data.ModelCount)
 	_ = a.db.QueryRow(`SELECT COUNT(*) FROM reviews WHERE approved = 0`).Scan(&data.PendingReviews)
+	_ = a.db.QueryRow(`SELECT COUNT(*) FROM appointments WHERE status = 'new'`).Scan(&data.PendingAppointments)
 	return data
 }
 

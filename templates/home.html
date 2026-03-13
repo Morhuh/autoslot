@@ -24,8 +24,19 @@
         <span class="eyebrow">Platforma za vozace i servise</span>
         <h1>Pronadji servis, procitaj iskustva i vodi racuna o autu na jednom mestu.</h1>
         <p>AutoSlot je spreman MVP za katalog auto-servisa, recenzije, informativne tekstove i bazu modela vozila. Odmah mozes da ga podignes, dopunis podacima i krenes sa radom.</p>
+        <div class="hero-points">
+          <span>Direktorijum servisa</span>
+          <span>Recenzije i moderacija</span>
+          <span>Online termini</span>
+          <span>Baza modela</span>
+        </div>
+        <div class="hero-actions">
+          <a class="button-secondary" href="/services">Istrazi servise</a>
+          <a class="button-ghost" href="/admin/services">Otvori admin</a>
+        </div>
       </div>
       <form class="hero-search card" action="/services" method="get">
+        <span class="floating-badge">Brz pocetak za produkciju</span>
         <label>Sta trazis?
           <input type="text" name="q" placeholder="npr. veliki servis, dijagnostika, trap">
         </label>
@@ -77,10 +88,15 @@
     </section>
 
     <section class="split-section">
-      <div>
+      <div class="spotlight-panel card">
         <span class="eyebrow">Sadrzaj za vozace</span>
         <h2>Saveti koji podizu vrednost platforme</h2>
         <p>Informativni portal je vec spreman kao deo proizvoda, pa ne pravis samo imenik servisa. Gradis mesto gde vozaci dolaze i kada ne traze servis tog dana.</p>
+        <div class="meta-line">
+          <span>SEO sadrzaj</span>
+          <span>Prakticni saveti</span>
+          <span>Povratak korisnika</span>
+        </div>
       </div>
       <div class="mini-grid">
         {{range .LatestArticles}}
@@ -123,6 +139,19 @@
         <div><strong>Faza 3</strong><p>Oglasi, prosireni poslovni profili, upravljanje sadrzajem od strane servisa.</p></div>
         <div><strong>Faza 4</strong><p>Online zakazivanje, slobodni termini, notifikacije i poslovna analitika.</p></div>
       </div>
+    </section>
+
+    <section class="accent-band">
+      <article class="band-card">
+        <span class="eyebrow">Zasto ovakav proizvod ima smisla</span>
+        <h2>Jedno mesto za izbor servisa, znanje i prvi kontakt sa radionicom.</h2>
+        <p>Kada korisnik na istom sajtu moze da nadje servis, uporedi iskustva, procita savet i posalje zahtev za termin, dobijas mnogo jaci proizvod od obicnog imenika.</p>
+      </article>
+      <article class="quote-card card">
+        <span class="eyebrow">Pozicija proizvoda</span>
+        <blockquote>"Od pretrage i poverenja do termina, bez lutanja po forumima i imeniku."</blockquote>
+        <a class="text-link" href="/services">Pogledaj kako izgleda katalog</a>
+      </article>
     </section>
   </main>
 </body>

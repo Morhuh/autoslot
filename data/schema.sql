@@ -92,3 +92,20 @@ CREATE TABLE IF NOT EXISTS models (
     image_url TEXT,
     featured INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS appointments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_id INTEGER NOT NULL,
+    customer_name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    email TEXT,
+    vehicle_brand TEXT,
+    vehicle_model TEXT,
+    vehicle_year TEXT,
+    requested_date TEXT NOT NULL,
+    service_request TEXT NOT NULL,
+    issue_details TEXT,
+    status TEXT NOT NULL DEFAULT 'new',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+);
