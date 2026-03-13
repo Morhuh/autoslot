@@ -6,6 +6,8 @@ Gotov MVP sajt za:
 - javne profile servisa
 - recenzije sa moderacijom
 - zahtevi za online zakazivanje termina
+- slobodni slotovi termina po servisu
+- partner portal za servise
 - informativne tekstove za vlasnike vozila
 - bazu modela vozila i poznatih problema
 - admin panel za unos i izmenu podataka
@@ -27,11 +29,18 @@ Sajt je dostupan na:
 
 - javni deo: [http://localhost:8080](http://localhost:8080)
 - admin panel: [http://localhost:8080/admin/services](http://localhost:8080/admin/services)
+- partner portal: [http://localhost:8080/partner/login](http://localhost:8080/partner/login)
 
 Podrazumevani admin pristup:
 
 - user: `admin`
 - pass: `admin123`
+
+Podrazumevani partner pristup za seed servise:
+
+- `partner@autoexpert.rs` / `servis123`
+- `partner@premiumdiesel.rs` / `servis123`
+- `partner@vukauto.rs` / `servis123`
 
 ## Kako unosis podatke
 
@@ -41,16 +50,18 @@ Podrazumevani admin pristup:
 4. U sekciji `Modeli` popuni bazu vozila.
 5. U sekciji `Recenzije` odobri korisnicke recenzije koje stignu sa javnog sajta.
 6. U sekciji `Termini` potvrdi, odbij ili zatvori zahteve za zakazivanje.
+7. Partner nalozi mogu samostalno da azuriraju svoj opis i objavljuju slobodne slotove.
 
 ## Napomene
 
 - Baza se automatski inicijalizuje i puni seed podacima pri prvom pokretanju.
 - Podaci ostaju sacuvani u Docker volume-u `autoslot_data`.
 - Ako menjas admin kredencijale, uradi to kroz `docker-compose.yml`.
+- Partner nalozi su trenutno jednostavni i seedovani u bazi radi brzog starta.
 
 ## Sledeci logicni koraci
 
 - korisnicki nalozi
 - claim profil za servise
-- raspored slobodnih termina po servisu
+- email notifikacije i reset lozinke za partnere
 - oglasi i dodatna monetizacija

@@ -32,6 +32,7 @@ body {
     radial-gradient(circle at 15% 20%, rgba(195, 90, 53, 0.16), transparent 24%),
     radial-gradient(circle at 85% 10%, rgba(42, 69, 54, 0.10), transparent 20%),
     linear-gradient(180deg, #f9f4ed 0%, #efe7dc 44%, #e8ded0 100%);
+  overflow-x: hidden;
 }
 
 body::before {
@@ -118,6 +119,7 @@ main {
 }
 
 .hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(360px, 430px);
   gap: 28px;
@@ -129,7 +131,10 @@ main {
 .hero-copy,
 .hero-search {
   position: relative;
+  animation: rise-in 700ms ease both;
 }
+
+.hero-search { animation-delay: 120ms; }
 
 .hero-copy {
   display: flex;
@@ -695,8 +700,37 @@ button {
   color: #f2e7db;
 }
 
+.admin-sidebar form {
+  width: 100%;
+}
+
+.admin-sidebar form button {
+  width: 100%;
+  min-width: 0;
+}
+
 .admin-main {
   padding: 28px;
+}
+
+.stack-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.partner-list,
+.partner-appointments {
+  padding: 24px;
+}
+
+.partner-hero {
+  min-height: calc(100vh - 180px);
+}
+
+.muted-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .admin-top {
@@ -784,6 +818,44 @@ button {
   font-weight: 700;
 }
 
+.hero::before {
+  content: "";
+  position: absolute;
+  top: 100px;
+  left: -80px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(195, 90, 53, 0.12), transparent 70%);
+  filter: blur(4px);
+  z-index: -1;
+}
+
+.page-title,
+.roadmap,
+.spotlight-panel,
+.band-card,
+.quote-card,
+.admin-top,
+.service-hero,
+.filters,
+.review-form,
+.partner-list,
+.partner-appointments {
+  animation: rise-in 560ms ease both;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1100px) {
   .hero,
   .split-section,
@@ -825,6 +897,10 @@ button {
   .hero {
     min-height: auto;
     padding-top: 20px;
+  }
+
+  .hero::before {
+    display: none;
   }
 
   .hero-copy h1,

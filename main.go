@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"html/template"
@@ -47,6 +49,7 @@ type Service struct {
 	Amenities    []string
 	Gallery      []string
 	Reviews      []Review
+	Slots        []AvailabilitySlot
 }
 
 type Offering struct {
@@ -86,7 +89,25 @@ type Appointment struct {
 	ServiceRequest string
 	IssueDetails   string
 	Status         string
+	SelectedSlotID int
 	CreatedAt      time.Time
+}
+
+type AvailabilitySlot struct {
+	ID        int
+	ServiceID int
+	StartsAt  string
+	Note      string
+	Active    bool
+}
+
+type ServiceUser struct {
+	ID        int
+	ServiceID int
+	Service   Service
+	Name      string
+	Email     string
+	Password  string
 }
 
 type Article struct {
@@ -192,6 +213,19 @@ type AdminPageData struct {
 	PendingAppointments int
 }
 
+type PartnerLoginData struct {
+	Title   string
+	Message string
+}
+
+type PartnerDashboardData struct {
+	Title        string
+	User         ServiceUser
+	Appointments []Appointment
+	Slots        []AvailabilitySlot
+	Message      string
+}
+
 func main() {
 	dbPath := envOrDefault("DB_PATH", filepath.Join("data", "autoslot.db"))
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
@@ -234,6 +268,13 @@ func main() {
 	mux.HandleFunc("/articles/", app.handleArticleDetail)
 	mux.HandleFunc("/models", app.handleModels)
 	mux.HandleFunc("/models/", app.handleModelDetail)
+	mux.HandleFunc("/partner/login", app.handlePartnerLogin)
+	mux.Handle("/partner/dashboard", app.partnerAuth(http.HandlerFunc(app.handlePartnerDashboard)))
+	mux.Handle("/partner/profile", app.partnerAuth(http.HandlerFunc(app.handlePartnerProfileSave)))
+	mux.Handle("/partner/slots", app.partnerAuth(http.HandlerFunc(app.handlePartnerSlotSave)))
+	mux.Handle("/partner/slots/", app.partnerAuth(http.HandlerFunc(app.handlePartnerSlotDelete)))
+	mux.Handle("/partner/appointments/", app.partnerAuth(http.HandlerFunc(app.handlePartnerAppointmentAction)))
+	mux.HandleFunc("/partner/logout", app.handlePartnerLogout)
 	mux.Handle("/admin", app.basicAuth(http.HandlerFunc(app.handleAdminDashboard)))
 	mux.Handle("/admin/", app.basicAuth(http.HandlerFunc(app.handleAdminRoutes)))
 
@@ -252,13 +293,16 @@ func initDB(db *sql.DB) error {
 	if _, err := db.Exec(string(schema)); err != nil {
 		return err
 	}
+	if err := runMigrations(db); err != nil {
+		return err
+	}
 
 	var count int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM services`).Scan(&count); err != nil {
 		return err
 	}
 	if count > 0 {
-		return nil
+		return ensureBootstrapData(db)
 	}
 
 	seed, err := os.ReadFile(filepath.Join("data", "seed.sql"))
@@ -266,7 +310,89 @@ func initDB(db *sql.DB) error {
 		return err
 	}
 	_, err = db.Exec(string(seed))
-	return err
+	if err != nil {
+		return err
+	}
+	return ensureBootstrapData(db)
+}
+
+func runMigrations(db *sql.DB) error {
+	hasColumn, err := tableHasColumn(db, "appointments", "selected_slot_id")
+	if err != nil {
+		return err
+	}
+	if !hasColumn {
+		if _, err := db.Exec(`ALTER TABLE appointments ADD COLUMN selected_slot_id INTEGER`); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureBootstrapData(db *sql.DB) error {
+	var count int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM service_users`).Scan(&count); err != nil {
+		return err
+	}
+	if count == 0 {
+		rows, err := db.Query(`SELECT id, slug, name FROM services ORDER BY id ASC LIMIT 3`)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id int
+			var slug string
+			var name string
+			if err := rows.Scan(&id, &slug, &name); err != nil {
+				return err
+			}
+			email := "partner@" + slug + ".rs"
+			email = strings.ReplaceAll(email, "--", "-")
+			if _, err := db.Exec(`INSERT INTO service_users (service_id, name, email, password) VALUES (?, ?, ?, 'servis123')`, id, name, email); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := db.QueryRow(`SELECT COUNT(*) FROM availability_slots`).Scan(&count); err != nil {
+		return err
+	}
+	if count == 0 {
+		if _, err := db.Exec(`
+			INSERT INTO availability_slots (service_id, starts_at, note, active) VALUES
+			(1, '2026-03-20 09:00', 'Brza dijagnostika i mali servis', 1),
+			(1, '2026-03-20 12:30', 'Termin za mehaniku', 1),
+			(2, '2026-03-21 08:30', 'Dizel dijagnostika', 1),
+			(3, '2026-03-22 10:00', 'Opsti servis', 1)
+		`); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func tableHasColumn(db *sql.DB, tableName, columnName string) (bool, error) {
+	rows, err := db.Query(fmt.Sprintf(`PRAGMA table_info(%s)`, tableName))
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name string
+		var ctype string
+		var notnull int
+		var dflt sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			return false, err
+		}
+		if name == columnName {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (a *App) handleHome(w http.ResponseWriter, r *http.Request) {
@@ -365,6 +491,63 @@ func (a *App) handleServiceDetail(w http.ResponseWriter, r *http.Request, slug s
 	})
 }
 
+func (a *App) handlePartnerLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		a.render(w, "partner_login.html", PartnerLoginData{
+			Title:   "Partner login",
+			Message: r.URL.Query().Get("msg"),
+		})
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "neispravan formular", http.StatusBadRequest)
+		return
+	}
+	email := strings.TrimSpace(r.FormValue("email"))
+	password := strings.TrimSpace(r.FormValue("password"))
+
+	user, err := a.getServiceUserByEmail(email)
+	if err != nil || user.Password != password {
+		a.render(w, "partner_login.html", PartnerLoginData{
+			Title:   "Partner login",
+			Message: "Pogresan email ili lozinka",
+		})
+		return
+	}
+
+	token, err := randomToken()
+	if err != nil {
+		http.Error(w, "greska pri prijavi", http.StatusInternalServerError)
+		return
+	}
+	_, err = a.db.Exec(`INSERT INTO service_sessions (service_user_id, token, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)`, user.ID, token)
+	if err != nil {
+		http.Error(w, "greska pri prijavi", http.StatusInternalServerError)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "autoslot_partner",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   60 * 60 * 24 * 7,
+	})
+	http.Redirect(w, r, "/partner/dashboard", http.StatusSeeOther)
+}
+
+func (a *App) handlePartnerLogout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/partner/login", http.StatusSeeOther)
+		return
+	}
+	if cookie, err := r.Cookie("autoslot_partner"); err == nil {
+		_, _ = a.db.Exec(`DELETE FROM service_sessions WHERE token=?`, cookie.Value)
+	}
+	http.SetCookie(w, &http.Cookie{Name: "autoslot_partner", Value: "", Path: "/", MaxAge: -1, HttpOnly: true})
+	http.Redirect(w, r, "/partner/login?msg=Odjavljeni+ste", http.StatusSeeOther)
+}
+
 func (a *App) handleReviewSubmit(w http.ResponseWriter, r *http.Request, slug string) {
 	service, err := a.getServiceBySlug(slug, false)
 	if err != nil {
@@ -438,19 +621,27 @@ func (a *App) handleAppointmentSubmit(w http.ResponseWriter, r *http.Request, sl
 		RequestedDate:  strings.TrimSpace(r.FormValue("requested_date")),
 		ServiceRequest: strings.TrimSpace(r.FormValue("service_request")),
 		IssueDetails:   strings.TrimSpace(r.FormValue("issue_details")),
+		SelectedSlotID: parseInt(r.FormValue("slot_id")),
 	}
 	if req.CustomerName == "" || req.Phone == "" || req.RequestedDate == "" || req.ServiceRequest == "" {
 		http.Redirect(w, r, "/services/"+slug, http.StatusSeeOther)
 		return
 	}
+	if req.SelectedSlotID > 0 {
+		var startsAt string
+		err := a.db.QueryRow(`SELECT starts_at FROM availability_slots WHERE id=? AND service_id=? AND active=1`, req.SelectedSlotID, service.ID).Scan(&startsAt)
+		if err == nil {
+			req.RequestedDate = startsAt
+		}
+	}
 
 	_, err = a.db.Exec(`
 		INSERT INTO appointments (
 			service_id, customer_name, phone, email, vehicle_brand, vehicle_model, vehicle_year,
-			requested_date, service_request, issue_details, status, created_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', CURRENT_TIMESTAMP)
+			requested_date, service_request, issue_details, status, selected_slot_id, created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, CURRENT_TIMESTAMP)
 	`, req.ServiceID, req.CustomerName, req.Phone, req.Email, req.VehicleBrand, req.VehicleModel, req.VehicleYear,
-		req.RequestedDate, req.ServiceRequest, req.IssueDetails)
+		req.RequestedDate, req.ServiceRequest, req.IssueDetails, req.SelectedSlotID)
 	if err != nil {
 		http.Error(w, "greska pri slanju zahteva", http.StatusInternalServerError)
 		return
@@ -812,7 +1003,7 @@ func (a *App) handleAdminAppointments(w http.ResponseWriter, r *http.Request) {
 	rows, err := a.db.Query(`
 		SELECT ap.id, ap.service_id, s.name, ap.customer_name, ap.phone, ap.email, ap.vehicle_brand,
 			ap.vehicle_model, ap.vehicle_year, ap.requested_date, ap.service_request, ap.issue_details,
-			ap.status, ap.created_at
+			ap.status, COALESCE(ap.selected_slot_id, 0), ap.created_at
 		FROM appointments ap
 		JOIN services s ON s.id = ap.service_id
 		ORDER BY ap.created_at DESC
@@ -828,7 +1019,7 @@ func (a *App) handleAdminAppointments(w http.ResponseWriter, r *http.Request) {
 		var item Appointment
 		if err := rows.Scan(&item.ID, &item.ServiceID, &item.ServiceName, &item.CustomerName, &item.Phone,
 			&item.Email, &item.VehicleBrand, &item.VehicleModel, &item.VehicleYear, &item.RequestedDate,
-			&item.ServiceRequest, &item.IssueDetails, &item.Status, &item.CreatedAt); err == nil {
+			&item.ServiceRequest, &item.IssueDetails, &item.Status, &item.SelectedSlotID, &item.CreatedAt); err == nil {
 			appointments = append(appointments, item)
 		}
 	}
@@ -882,6 +1073,135 @@ func (a *App) handleAdminAppointmentAction(w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, "/admin/appointments?msg=Zahtev+je+azuriran", http.StatusSeeOther)
 }
 
+func (a *App) handlePartnerDashboard(w http.ResponseWriter, r *http.Request) {
+	user, err := a.currentServiceUser(r)
+	if err != nil {
+		http.Redirect(w, r, "/partner/login", http.StatusSeeOther)
+		return
+	}
+	service, err := a.getServiceByID(user.ServiceID)
+	if err == nil {
+		user.Service = service
+	}
+	appointments, _ := a.listAppointmentsByService(user.ServiceID)
+	slots, _ := a.listAvailabilitySlots(user.ServiceID)
+	a.render(w, "partner_dashboard.html", PartnerDashboardData{
+		Title:        "Partner dashboard",
+		User:         user,
+		Appointments: appointments,
+		Slots:        slots,
+		Message:      r.URL.Query().Get("msg"),
+	})
+}
+
+func (a *App) handlePartnerProfileSave(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/partner/dashboard", http.StatusSeeOther)
+		return
+	}
+	user, err := a.currentServiceUser(r)
+	if err != nil {
+		http.Redirect(w, r, "/partner/login", http.StatusSeeOther)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "neispravan formular", http.StatusBadRequest)
+		return
+	}
+	_, err = a.db.Exec(`
+		UPDATE services SET description=?, phone=?, email=?, website=?, working_hours=?, specialties=?, image_url=?
+		WHERE id=?
+	`, strings.TrimSpace(r.FormValue("description")), strings.TrimSpace(r.FormValue("phone")),
+		strings.TrimSpace(r.FormValue("email")), strings.TrimSpace(r.FormValue("website")),
+		strings.TrimSpace(r.FormValue("working_hours")), strings.TrimSpace(r.FormValue("specialties")),
+		strings.TrimSpace(r.FormValue("image_url")), user.ServiceID)
+	if err != nil {
+		http.Redirect(w, r, "/partner/dashboard?msg=Greska+pri+snimanju+profila", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/partner/dashboard?msg=Profil+je+sacuvan", http.StatusSeeOther)
+}
+
+func (a *App) handlePartnerSlotSave(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/partner/dashboard", http.StatusSeeOther)
+		return
+	}
+	user, err := a.currentServiceUser(r)
+	if err != nil {
+		http.Redirect(w, r, "/partner/login", http.StatusSeeOther)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "neispravan formular", http.StatusBadRequest)
+		return
+	}
+	startsAt := strings.TrimSpace(r.FormValue("starts_at"))
+	note := strings.TrimSpace(r.FormValue("note"))
+	if startsAt == "" {
+		http.Redirect(w, r, "/partner/dashboard?msg=Datum+slota+je+obavezan", http.StatusSeeOther)
+		return
+	}
+	_, err = a.db.Exec(`INSERT INTO availability_slots (service_id, starts_at, note, active) VALUES (?, ?, ?, 1)`, user.ServiceID, startsAt, note)
+	if err != nil {
+		http.Redirect(w, r, "/partner/dashboard?msg=Greska+pri+snimanju+slota", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/partner/dashboard?msg=Slot+je+dodat", http.StatusSeeOther)
+}
+
+func (a *App) handlePartnerSlotDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/partner/dashboard", http.StatusSeeOther)
+		return
+	}
+	user, err := a.currentServiceUser(r)
+	if err != nil {
+		http.Redirect(w, r, "/partner/login", http.StatusSeeOther)
+		return
+	}
+	id := parseInt(strings.Trim(strings.TrimPrefix(r.URL.Path, "/partner/slots/"), "/"))
+	if id == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	_, err = a.db.Exec(`UPDATE availability_slots SET active=0 WHERE id=? AND service_id=?`, id, user.ServiceID)
+	if err != nil {
+		http.Redirect(w, r, "/partner/dashboard?msg=Greska+pri+gasenju+slota", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/partner/dashboard?msg=Slot+je+sklonjen", http.StatusSeeOther)
+}
+
+func (a *App) handlePartnerAppointmentAction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/partner/dashboard", http.StatusSeeOther)
+		return
+	}
+	user, err := a.currentServiceUser(r)
+	if err != nil {
+		http.Redirect(w, r, "/partner/login", http.StatusSeeOther)
+		return
+	}
+	id := parseInt(strings.Trim(strings.TrimPrefix(r.URL.Path, "/partner/appointments/"), "/"))
+	if id == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	status := strings.TrimSpace(r.FormValue("status"))
+	switch status {
+	case "confirmed", "rejected", "completed", "new":
+	default:
+		status = "new"
+	}
+	_, err = a.db.Exec(`UPDATE appointments SET status=? WHERE id=? AND service_id=?`, status, id, user.ServiceID)
+	if err != nil {
+		http.Redirect(w, r, "/partner/dashboard?msg=Greska+pri+izmeni+statusa", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/partner/dashboard?msg=Status+je+azuriran", http.StatusSeeOther)
+}
+
 func (a *App) adminData(section, message string) AdminPageData {
 	data := AdminPageData{
 		Title:   "Admin panel",
@@ -909,6 +1229,16 @@ func (a *App) basicAuth(next http.Handler) http.Handler {
 		if !ok || user != a.adminUser || pass != a.adminPass {
 			w.Header().Set("WWW-Authenticate", `Basic realm="autoslot-admin"`)
 			http.Error(w, "autorizacija je potrebna", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (a *App) partnerAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := a.currentServiceUser(r); err != nil {
+			http.Redirect(w, r, "/partner/login?msg=Prijavi+se+kao+servis", http.StatusSeeOther)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -1040,6 +1370,7 @@ func (a *App) getServiceBySlug(slug string, withReviews bool) (Service, error) {
 	service.Brands, _ = a.listStrings(`SELECT brand FROM service_brands WHERE service_id=? ORDER BY brand`, service.ID)
 	service.Amenities, _ = a.listStrings(`SELECT amenity FROM service_amenities WHERE service_id=? ORDER BY amenity`, service.ID)
 	service.Gallery, _ = a.listStrings(`SELECT image_url FROM service_gallery WHERE service_id=? ORDER BY id`, service.ID)
+	service.Slots, _ = a.listAvailabilitySlots(service.ID)
 
 	if withReviews {
 		rows, err := a.db.Query(`
@@ -1082,6 +1413,7 @@ func (a *App) getServiceByID(id int) (Service, error) {
 	service.Brands, _ = a.listStrings(`SELECT brand FROM service_brands WHERE service_id=? ORDER BY brand`, service.ID)
 	service.Amenities, _ = a.listStrings(`SELECT amenity FROM service_amenities WHERE service_id=? ORDER BY amenity`, service.ID)
 	service.Gallery, _ = a.listStrings(`SELECT image_url FROM service_gallery WHERE service_id=? ORDER BY id`, service.ID)
+	service.Slots, _ = a.listAvailabilitySlots(service.ID)
 	return service, nil
 }
 
@@ -1231,6 +1563,75 @@ func (a *App) listOfferings(serviceID int) ([]Offering, error) {
 		}
 	}
 	return offerings, nil
+}
+
+func (a *App) listAvailabilitySlots(serviceID int) ([]AvailabilitySlot, error) {
+	rows, err := a.db.Query(`
+		SELECT id, service_id, starts_at, note, active
+		FROM availability_slots
+		WHERE service_id=? AND active=1
+		ORDER BY starts_at ASC
+	`, serviceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var slots []AvailabilitySlot
+	for rows.Next() {
+		var slot AvailabilitySlot
+		if err := rows.Scan(&slot.ID, &slot.ServiceID, &slot.StartsAt, &slot.Note, &slot.Active); err == nil {
+			slots = append(slots, slot)
+		}
+	}
+	return slots, nil
+}
+
+func (a *App) listAppointmentsByService(serviceID int) ([]Appointment, error) {
+	rows, err := a.db.Query(`
+		SELECT ap.id, ap.service_id, s.name, ap.customer_name, ap.phone, ap.email, ap.vehicle_brand,
+			ap.vehicle_model, ap.vehicle_year, ap.requested_date, ap.service_request, ap.issue_details,
+			ap.status, COALESCE(ap.selected_slot_id, 0), ap.created_at
+		FROM appointments ap
+		JOIN services s ON s.id = ap.service_id
+		WHERE ap.service_id = ?
+		ORDER BY ap.created_at DESC
+	`, serviceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var appointments []Appointment
+	for rows.Next() {
+		var item Appointment
+		if err := rows.Scan(&item.ID, &item.ServiceID, &item.ServiceName, &item.CustomerName, &item.Phone,
+			&item.Email, &item.VehicleBrand, &item.VehicleModel, &item.VehicleYear, &item.RequestedDate,
+			&item.ServiceRequest, &item.IssueDetails, &item.Status, &item.SelectedSlotID, &item.CreatedAt); err == nil {
+			appointments = append(appointments, item)
+		}
+	}
+	return appointments, nil
+}
+
+func (a *App) getServiceUserByEmail(email string) (ServiceUser, error) {
+	var user ServiceUser
+	err := a.db.QueryRow(`SELECT id, service_id, name, email, password FROM service_users WHERE email=?`, email).
+		Scan(&user.ID, &user.ServiceID, &user.Name, &user.Email, &user.Password)
+	return user, err
+}
+
+func (a *App) currentServiceUser(r *http.Request) (ServiceUser, error) {
+	var user ServiceUser
+	cookie, err := r.Cookie("autoslot_partner")
+	if err != nil {
+		return user, err
+	}
+	err = a.db.QueryRow(`
+		SELECT su.id, su.service_id, su.name, su.email, su.password
+		FROM service_sessions ss
+		JOIN service_users su ON su.id = ss.service_user_id
+		WHERE ss.token = ?
+	`, cookie.Value).Scan(&user.ID, &user.ServiceID, &user.Name, &user.Email, &user.Password)
+	return user, err
 }
 
 func (a *App) loadDirectoryFilters() ([]string, []string, []string, error) {
@@ -1470,4 +1871,12 @@ func logRequest(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start).Round(time.Millisecond))
 	})
+}
+
+func randomToken() (string, error) {
+	buf := make([]byte, 24)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(buf), nil
 }

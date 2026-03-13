@@ -14,6 +14,7 @@
       <a href="/services">Servisi</a>
       <a href="/models">Modeli</a>
       <a href="/articles">Saveti</a>
+      <a href="/partner/login">Partner</a>
       <a href="/admin/services">Admin</a>
     </nav>
   </header>
@@ -51,6 +52,16 @@
         <div class="price-list">
           {{range .Service.Offerings}}
           <div><span>{{.Name}}</span><strong>{{.PriceFrom}}</strong></div>
+          {{end}}
+        </div>
+      </article>
+      <article class="card">
+        <h2>Slobodni termini</h2>
+        <div class="price-list">
+          {{range .Service.Slots}}
+          <div><span>{{.StartsAt}}</span><strong>{{.Note}}</strong></div>
+          {{else}}
+          <div><span>Trenutno nema objavljenih slobodnih slotova</span><strong>Posalji slobodan zahtev</strong></div>
           {{end}}
         </div>
       </article>
@@ -127,6 +138,12 @@
           <label>Marka vozila<input type="text" name="vehicle_brand"></label>
           <label>Model vozila<input type="text" name="vehicle_model"></label>
           <label>Godiste<input type="text" name="vehicle_year"></label>
+          <label>Izaberi slobodan slot
+            <select name="slot_id">
+              <option value="">Rucni unos termina</option>
+              {{range .Service.Slots}}<option value="{{.ID}}">{{.StartsAt}} | {{.Note}}</option>{{end}}
+            </select>
+          </label>
           <label>Termin / datum<input type="text" name="requested_date" placeholder="npr. 2026-03-20 09:30" required></label>
           <label>Vrsta usluge
             <input type="text" name="service_request" placeholder="npr. mali servis, dijagnostika" required>

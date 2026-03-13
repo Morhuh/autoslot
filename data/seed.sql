@@ -67,3 +67,14 @@ INSERT INTO models (slug, brand, model_name, years, engine, service_interval, kn
 
 INSERT INTO appointments (service_id, customer_name, phone, email, vehicle_brand, vehicle_model, vehicle_year, requested_date, service_request, issue_details, status, created_at) VALUES
 (1, 'Milos Savic', '+381 64 220 1188', 'milos@example.com', 'Volkswagen', 'Golf 7', '2016', '2026-03-18 10:00', 'Veliki servis', 'Zelim pregled kaiša i vodene pumpe pre duzeg puta.', 'new', '2026-03-11 11:00:00');
+
+INSERT INTO availability_slots (service_id, starts_at, note, active) VALUES
+(1, '2026-03-20 09:00', 'Brza dijagnostika i mali servis', 1),
+(1, '2026-03-20 12:30', 'Termin za mehaniku', 1),
+(2, '2026-03-21 08:30', 'Dizel dijagnostika', 1),
+(3, '2026-03-22 10:00', 'Opsti servis', 1);
+
+INSERT INTO service_users (service_id, name, email, password) VALUES
+(1, 'AutoExpert tim', 'partner@autoexpert.rs', 'servis123'),
+(2, 'Premium Diesel tim', 'partner@premiumdiesel.rs', 'servis123'),
+(3, 'Vuk Auto Centar', 'partner@vukauto.rs', 'servis123');

@@ -106,6 +106,33 @@ CREATE TABLE IF NOT EXISTS appointments (
     service_request TEXT NOT NULL,
     issue_details TEXT,
     status TEXT NOT NULL DEFAULT 'new',
+    selected_slot_id INTEGER,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS availability_slots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_id INTEGER NOT NULL,
+    starts_at TEXT NOT NULL,
+    note TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS service_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS service_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_user_id INTEGER NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (service_user_id) REFERENCES service_users(id) ON DELETE CASCADE
 );

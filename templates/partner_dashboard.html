@@ -1,0 +1,101 @@
+{{define "partner_dashboard.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <a class="brand" href="/">AutoSlot</a>
+    <a class="active" href="/partner/dashboard">Dashboard</a>
+    <a href="/services/{{.User.Service.Slug}}">Javni profil</a>
+    <a href="/admin/services">Global admin</a>
+    <form method="post" action="/partner/logout"><button type="submit">Odjava</button></form>
+  </aside>
+  <main class="admin-main">
+    <section class="admin-top">
+      <div>
+        <h1>{{.User.Service.Name}}</h1>
+        <p>Partner panel za servis. Ovde menjas javni opis, objavljujes slobodne termine i obradujes svoje zahteve.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="button-secondary" href="/services/{{.User.Service.Slug}}">Pogledaj javni profil</a>
+      </div>
+    </section>
+    {{if .Message}}<p class="notice">{{.Message}}</p>{{end}}
+
+    <section class="admin-grid">
+      <form class="card admin-form" method="post" action="/partner/profile">
+        <h2>Profil servisa</h2>
+        <label>Telefon<input type="text" name="phone" value="{{.User.Service.Phone}}"></label>
+        <label>Email<input type="text" name="email" value="{{.User.Service.Email}}"></label>
+        <label>Website<input type="text" name="website" value="{{.User.Service.Website}}"></label>
+        <label>Radno vreme<input type="text" name="working_hours" value="{{.User.Service.WorkingHours}}"></label>
+        <label>Specijalnosti<input type="text" name="specialties" value="{{.User.Service.Specialties}}"></label>
+        <label>Glavna slika URL<input type="text" name="image_url" value="{{.User.Service.ImageURL}}"></label>
+        <label>Opis<textarea name="description" rows="7">{{.User.Service.Description}}</textarea></label>
+        <button type="submit">Sacuvaj profil</button>
+      </form>
+
+      <div class="stack-grid">
+        <form class="card admin-form" method="post" action="/partner/slots">
+          <h2>Dodaj slobodan slot</h2>
+          <label>Datum i vreme<input type="text" name="starts_at" placeholder="2026-03-25 09:30" required></label>
+          <label>Napomena<input type="text" name="note" placeholder="npr. mali servis, dijagnostika"></label>
+          <button type="submit">Dodaj slot</button>
+        </form>
+        <section class="card partner-list">
+          <h2>Objavljeni slotovi</h2>
+          <div class="admin-list">
+            {{range .Slots}}
+            <article>
+              <div>
+                <strong>{{.StartsAt}}</strong>
+                <span>{{.Note}}</span>
+              </div>
+              <form method="post" action="/partner/slots/{{.ID}}">
+                <button type="submit">Skloni</button>
+              </form>
+            </article>
+            {{else}}
+            <article><p>Nema aktivnih slotova.</p></article>
+            {{end}}
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="card partner-appointments">
+      <h2>Zahtevi za termine</h2>
+      <div class="admin-list appointments-list">
+        {{range .Appointments}}
+        <article class="appointment-item">
+          <div>
+            <strong>{{.CustomerName}}</strong>
+            <span>{{.RequestedDate}} | {{.ServiceRequest}} | status: {{.Status}}</span>
+            <p><strong>Telefon:</strong> {{.Phone}} {{if .Email}}| <strong>Email:</strong> {{.Email}}{{end}}</p>
+            <p><strong>Vozilo:</strong> {{.VehicleBrand}} {{.VehicleModel}} {{.VehicleYear}}</p>
+            {{if .IssueDetails}}<p><strong>Napomena:</strong> {{.IssueDetails}}</p>{{end}}
+          </div>
+          <form class="status-form" method="post" action="/partner/appointments/{{.ID}}">
+            <select name="status">
+              <option value="new" {{if eq .Status "new"}}selected{{end}}>Na cekanju</option>
+              <option value="confirmed" {{if eq .Status "confirmed"}}selected{{end}}>Potvrdjen</option>
+              <option value="rejected" {{if eq .Status "rejected"}}selected{{end}}>Odbijen</option>
+              <option value="completed" {{if eq .Status "completed"}}selected{{end}}>Zavrsen</option>
+            </select>
+            <button type="submit">Azuriraj</button>
+          </form>
+        </article>
+        {{else}}
+        <article><p>Jos nema pristiglih zahteva.</p></article>
+        {{end}}
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+{{end}}
