@@ -237,6 +237,13 @@ func main() {
 		log.Fatalf("open db: %v", err)
 	}
 	defer db.Close()
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	db.SetConnMaxLifetime(0)
+
+	if err := configureSQLite(db); err != nil {
+		log.Fatalf("configure db: %v", err)
+	}
 
 	if err := initDB(db); err != nil {
 		log.Fatalf("init db: %v", err)
@@ -314,6 +321,21 @@ func initDB(db *sql.DB) error {
 		return err
 	}
 	return ensureBootstrapData(db)
+}
+
+func configureSQLite(db *sql.DB) error {
+	pragmas := []string{
+		`PRAGMA busy_timeout = 10000`,
+		`PRAGMA journal_mode = WAL`,
+		`PRAGMA synchronous = NORMAL`,
+		`PRAGMA foreign_keys = ON`,
+	}
+	for _, pragma := range pragmas {
+		if _, err := db.Exec(pragma); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func runMigrations(db *sql.DB) error {
