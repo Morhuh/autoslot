@@ -6,7 +6,7 @@ COPY go.mod ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/autoslot .
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o /bin/autoslot .
 
 FROM alpine:3.21
 
