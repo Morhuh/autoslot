@@ -361,17 +361,27 @@ func ensureBootstrapData(db *sql.DB) error {
 		if err != nil {
 			return err
 		}
-		defer rows.Close()
+		type bootstrapService struct {
+			ID   int
+			Slug string
+			Name string
+		}
+		var services []bootstrapService
 		for rows.Next() {
-			var id int
-			var slug string
-			var name string
-			if err := rows.Scan(&id, &slug, &name); err != nil {
+			var item bootstrapService
+			if err := rows.Scan(&item.ID, &item.Slug, &item.Name); err != nil {
+				rows.Close()
 				return err
 			}
-			email := "partner@" + slug + ".rs"
+			services = append(services, item)
+		}
+		if err := rows.Close(); err != nil {
+			return err
+		}
+		for _, item := range services {
+			email := "partner@" + item.Slug + ".rs"
 			email = strings.ReplaceAll(email, "--", "-")
-			if _, err := db.Exec(`INSERT INTO service_users (service_id, name, email, password) VALUES (?, ?, ?, 'servis123')`, id, name, email); err != nil {
+			if _, err := db.Exec(`INSERT INTO service_users (service_id, name, email, password) VALUES (?, ?, ?, 'servis123')`, item.ID, item.Name, email); err != nil {
 				return err
 			}
 		}
