@@ -1,0 +1,59 @@
+{{define "admin_models.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <a class="brand" href="/">AutoSlot</a>
+    <a class="{{if eq .Section "services"}}active{{end}}" href="/admin/services">Servisi</a>
+    <a class="{{if eq .Section "articles"}}active{{end}}" href="/admin/articles">Saveti</a>
+    <a class="{{if eq .Section "models"}}active{{end}}" href="/admin/models">Modeli</a>
+    <a class="{{if eq .Section "reviews"}}active{{end}}" href="/admin/reviews">Recenzije</a>
+  </aside>
+  <main class="admin-main">
+    <section class="admin-top">
+      <div><h1>Baza modela vozila</h1><p>Ovaj deo sajta gradi dugorocnu vrednost kroz problem-specifcan sadrzaj.</p></div>
+      <a class="button-secondary" href="/models">Javna baza modela</a>
+    </section>
+    {{if .Message}}<p class="notice">{{.Message}}</p>{{end}}
+    <section class="admin-grid">
+      <form class="card admin-form" method="post" action="/admin/models">
+        <h2>{{if .EditModel.ID}}Izmena modela{{else}}Novi model{{end}}</h2>
+        <input type="hidden" name="id" value="{{.EditModel.ID}}">
+        <label>Marka<input type="text" name="brand" value="{{.EditModel.Brand}}" required></label>
+        <label>Model<input type="text" name="model_name" value="{{.EditModel.ModelName}}" required></label>
+        <label>Slug<input type="text" name="slug" value="{{.EditModel.Slug}}"></label>
+        <label>Godista<input type="text" name="years" value="{{.EditModel.Years}}"></label>
+        <label>Motor<input type="text" name="engine" value="{{.EditModel.Engine}}"></label>
+        <label>Servisni interval<textarea name="service_interval" rows="3">{{.EditModel.ServiceInterval}}</textarea></label>
+        <label>Poznati problemi<textarea name="known_issues" rows="4">{{.EditModel.KnownIssues}}</textarea></label>
+        <label>Okvirni troskovi<textarea name="typical_costs" rows="4">{{.EditModel.TypicalCosts}}</textarea></label>
+        <label>Kratak opis<textarea name="summary" rows="4">{{.EditModel.Summary}}</textarea></label>
+        <label>Slika URL<input type="text" name="image_url" value="{{.EditModel.ImageURL}}"></label>
+        <label class="checkbox"><input type="checkbox" name="featured" {{if .EditModel.Featured}}checked{{end}}> Istakni model</label>
+        <button type="submit">Sacuvaj model</button>
+      </form>
+      <section class="card">
+        <h2>Postojeci modeli</h2>
+        <div class="admin-list">
+          {{range .Models}}
+          <article>
+            <div>
+              <strong>{{.Brand}} {{.ModelName}}</strong>
+              <span>{{.Years}} | {{.Engine}}</span>
+            </div>
+            <a class="text-link" href="/admin/models?edit={{.ID}}">Izmeni</a>
+          </article>
+          {{end}}
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

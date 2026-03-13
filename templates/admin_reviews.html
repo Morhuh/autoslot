@@ -1,0 +1,49 @@
+{{define "admin_reviews.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <a class="brand" href="/">AutoSlot</a>
+    <a class="{{if eq .Section "services"}}active{{end}}" href="/admin/services">Servisi</a>
+    <a class="{{if eq .Section "articles"}}active{{end}}" href="/admin/articles">Saveti</a>
+    <a class="{{if eq .Section "models"}}active{{end}}" href="/admin/models">Modeli</a>
+    <a class="{{if eq .Section "reviews"}}active{{end}}" href="/admin/reviews">Recenzije</a>
+  </aside>
+  <main class="admin-main">
+    <section class="admin-top">
+      <div><h1>Moderacija recenzija</h1><p>Nove recenzije stizu kao neodobrene i cekaju proveru.</p></div>
+      <a class="button-secondary" href="/services">Javni sajt</a>
+    </section>
+    {{if .Message}}<p class="notice">{{.Message}}</p>{{end}}
+    <section class="card">
+      <div class="admin-list">
+        {{range .Reviews}}
+        <article class="review-admin-item">
+          <div>
+            <strong>{{.ServiceName}} | {{.AuthorName}}</strong>
+            <span>{{formatDate .CreatedAt}} | {{stars .Rating}}</span>
+            <p>{{.Title}}: {{.Comment}}</p>
+          </div>
+          <form method="post" action="/admin/reviews/{{.ID}}">
+            {{if .Approved}}
+            <input type="hidden" name="action" value="unapprove">
+            <button type="submit">Vrati na cekanje</button>
+            {{else}}
+            <input type="hidden" name="action" value="approve">
+            <button type="submit">Odobri</button>
+            {{end}}
+          </form>
+        </article>
+        {{end}}
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

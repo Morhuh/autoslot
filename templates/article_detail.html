@@ -1,0 +1,34 @@
+{{define "article_detail.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">AutoSlot</a>
+    <nav>
+      <a href="/services">Servisi</a>
+      <a href="/models">Modeli</a>
+      <a href="/articles">Saveti</a>
+      <a href="/admin/services">Admin</a>
+    </nav>
+  </header>
+  <main class="page-shell">
+    <article class="article-shell card">
+      <span class="pill">{{.Article.Category}}</span>
+      <h1>{{.Article.Title}}</h1>
+      <p class="article-lead">{{.Article.Excerpt}}</p>
+      <div class="service-meta">
+        <span>{{.Article.ReadTime}}</span>
+        <span>{{formatDate .Article.PublishedAt}}</span>
+      </div>
+      <div class="article-body">{{.Article.Body}}</div>
+    </article>
+  </main>
+</body>
+</html>
+{{end}}

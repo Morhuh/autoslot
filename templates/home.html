@@ -1,0 +1,130 @@
+{{define "home.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">AutoSlot</a>
+    <nav>
+      <a href="/services">Servisi</a>
+      <a href="/models">Modeli</a>
+      <a href="/articles">Saveti</a>
+      <a href="/admin/services">Admin</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Platforma za vozace i servise</span>
+        <h1>Pronadji servis, procitaj iskustva i vodi racuna o autu na jednom mestu.</h1>
+        <p>AutoSlot je spreman MVP za katalog auto-servisa, recenzije, informativne tekstove i bazu modela vozila. Odmah mozes da ga podignes, dopunis podacima i krenes sa radom.</p>
+      </div>
+      <form class="hero-search card" action="/services" method="get">
+        <label>Sta trazis?
+          <input type="text" name="q" placeholder="npr. veliki servis, dijagnostika, trap">
+        </label>
+        <label>Grad
+          <select name="city">
+            <option value="">Svi gradovi</option>
+            {{range .Cities}}<option value="{{.}}">{{.}}</option>{{end}}
+          </select>
+        </label>
+        <label>Marka vozila
+          <select name="brand">
+            <option value="">Sve marke</option>
+            {{range .Brands}}<option value="{{.}}">{{.}}</option>{{end}}
+          </select>
+        </label>
+        <button type="submit">Pretrazi servise</button>
+      </form>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card"><strong>1 platforma</strong><span>za servis, informacije i poverenje</span></article>
+      <article class="stat-card"><strong>Admin panel</strong><span>za unos servisa, clanaka i modela</span></article>
+      <article class="stat-card"><strong>Recenzije</strong><span>sa moderacijom pre objave</span></article>
+    </section>
+
+    <section class="section-head">
+      <div>
+        <span class="eyebrow">Istaknuti servisi</span>
+        <h2>Najspremniji za start</h2>
+      </div>
+      <a class="text-link" href="/services">Pogledaj ceo direktorijum</a>
+    </section>
+    <section class="card-grid">
+      {{range .FeaturedServices}}
+      <article class="service-card card">
+        <div class="service-image" style="background-image:url('{{.ImageURL}}')"></div>
+        <div class="service-body">
+          <div class="service-meta">
+            <span>{{.City}}</span>
+            <span>{{printf "%.1f" .Rating}} / 5</span>
+          </div>
+          <h3>{{.Name}}</h3>
+          <p>{{.Description}}</p>
+          <div class="tags">{{range .Brands}}<span>{{.}}</span>{{end}}</div>
+          <a class="button-secondary" href="/services/{{.Slug}}">Otvori profil</a>
+        </div>
+      </article>
+      {{end}}
+    </section>
+
+    <section class="split-section">
+      <div>
+        <span class="eyebrow">Sadrzaj za vozace</span>
+        <h2>Saveti koji podizu vrednost platforme</h2>
+        <p>Informativni portal je vec spreman kao deo proizvoda, pa ne pravis samo imenik servisa. Gradis mesto gde vozaci dolaze i kada ne traze servis tog dana.</p>
+      </div>
+      <div class="mini-grid">
+        {{range .LatestArticles}}
+        <article class="mini-card card">
+          <span class="pill">{{.Category}}</span>
+          <h3>{{.Title}}</h3>
+          <p>{{.Excerpt}}</p>
+          <a class="text-link" href="/articles/{{.Slug}}">Procitaj tekst</a>
+        </article>
+        {{end}}
+      </div>
+    </section>
+
+    <section class="section-head">
+      <div>
+        <span class="eyebrow">Modeli vozila</span>
+        <h2>Temelj za sledecu fazu razvoja</h2>
+      </div>
+      <a class="text-link" href="/models">Idi na bazu modela</a>
+    </section>
+    <section class="card-grid models-grid">
+      {{range .FeaturedModels}}
+      <article class="model-card card">
+        <div class="model-image" style="background-image:url('{{.ImageURL}}')"></div>
+        <h3>{{.Brand}} {{.ModelName}}</h3>
+        <p>{{.Summary}}</p>
+        <a class="button-secondary" href="/models/{{.Slug}}">Detalji modela</a>
+      </article>
+      {{end}}
+    </section>
+
+    <section class="roadmap card">
+      <div>
+        <span class="eyebrow">Razvoj po fazama</span>
+        <h2>Sta je uradjeno, a sta je spremno za nadogradnju</h2>
+      </div>
+      <div class="roadmap-grid">
+        <div><strong>Faza 1</strong><p>Direktorijum servisa, javni profili, recenzije, saveti i baza modela.</p></div>
+        <div><strong>Faza 2</strong><p>Korisnicki nalozi, napredniji filteri, prijavljivanje servisa i personalizacija.</p></div>
+        <div><strong>Faza 3</strong><p>Oglasi, prosireni poslovni profili, upravljanje sadrzajem od strane servisa.</p></div>
+        <div><strong>Faza 4</strong><p>Online zakazivanje, slobodni termini, notifikacije i poslovna analitika.</p></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

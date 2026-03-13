@@ -1,0 +1,50 @@
+{{define "models.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">AutoSlot</a>
+    <nav>
+      <a href="/services">Servisi</a>
+      <a href="/models">Modeli</a>
+      <a href="/articles">Saveti</a>
+      <a href="/admin/services">Admin</a>
+    </nav>
+  </header>
+  <main class="page-shell">
+    <section class="page-title">
+      <span class="eyebrow">Baza modela</span>
+      <h1>Marke, modeli i poznate slabosti</h1>
+      <p>Ovo je deo projekta koji priprema teren za dublju automobilsku bazu znanja.</p>
+    </section>
+    <section class="filters card">
+      <form class="filters-grid" action="/models" method="get">
+        <input type="text" name="q" value="{{.Query}}" placeholder="Marka, model ili poznat problem">
+        <select name="brand">
+          <option value="">Sve marke</option>
+          {{range .Brands}}<option value="{{.}}" {{if eq $.Brand .}}selected{{end}}>{{.}}</option>{{end}}
+        </select>
+        <button type="submit">Pretrazi modele</button>
+      </form>
+    </section>
+    <section class="card-grid models-grid">
+      {{range .Models}}
+      <article class="model-card card">
+        <div class="model-image" style="background-image:url('{{.ImageURL}}')"></div>
+        <span class="pill">{{.Brand}}</span>
+        <h2>{{.ModelName}}</h2>
+        <p>{{.Summary}}</p>
+        <a class="button-secondary" href="/models/{{.Slug}}">Detalji modela</a>
+      </article>
+      {{end}}
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

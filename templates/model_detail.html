@@ -1,0 +1,50 @@
+{{define "model_detail.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">AutoSlot</a>
+    <nav>
+      <a href="/services">Servisi</a>
+      <a href="/models">Modeli</a>
+      <a href="/articles">Saveti</a>
+      <a href="/admin/services">Admin</a>
+    </nav>
+  </header>
+  <main class="page-shell">
+    <section class="service-hero card">
+      <div class="detail-image" style="background-image:url('{{.Model.ImageURL}}')"></div>
+      <div>
+        <span class="eyebrow">{{.Model.Brand}}</span>
+        <h1>{{.Model.ModelName}}</h1>
+        <p>{{.Model.Summary}}</p>
+        <div class="service-meta">
+          <span>{{.Model.Years}}</span>
+          <span>{{.Model.Engine}}</span>
+        </div>
+      </div>
+    </section>
+    <section class="detail-grid">
+      <article class="card">
+        <h2>Servisni interval</h2>
+        <p>{{.Model.ServiceInterval}}</p>
+      </article>
+      <article class="card">
+        <h2>Poznati problemi</h2>
+        <p>{{.Model.KnownIssues}}</p>
+      </article>
+      <article class="card">
+        <h2>Okvirni troskovi</h2>
+        <p>{{.Model.TypicalCosts}}</p>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

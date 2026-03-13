@@ -1,0 +1,17 @@
+services:
+  autoslot:
+    build: .
+    container_name: autoslot
+    ports:
+      - "8080:8080"
+    environment:
+      DB_PATH: /data/autoslot.db
+      APP_ADDR: :8080
+      ADMIN_USER: admin
+      ADMIN_PASS: admin123
+    volumes:
+      - autoslot_data:/data
+    restart: unless-stopped
+
+volumes:
+  autoslot_data:

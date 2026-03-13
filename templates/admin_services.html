@@ -1,0 +1,72 @@
+{{define "admin_services.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <a class="brand" href="/">AutoSlot</a>
+    <a class="{{if eq .Section "services"}}active{{end}}" href="/admin/services">Servisi</a>
+    <a class="{{if eq .Section "articles"}}active{{end}}" href="/admin/articles">Saveti</a>
+    <a class="{{if eq .Section "models"}}active{{end}}" href="/admin/models">Modeli</a>
+    <a class="{{if eq .Section "reviews"}}active{{end}}" href="/admin/reviews">Recenzije</a>
+  </aside>
+  <main class="admin-main">
+    <section class="admin-top">
+      <div><h1>Admin panel</h1><p>{{.ServiceCount}} servisa, {{.ArticleCount}} tekstova, {{.ModelCount}} modela, {{.PendingReviews}} recenzija ceka moderaciju.</p></div>
+      <a class="button-secondary" href="/">Javni sajt</a>
+    </section>
+    {{if .Message}}<p class="notice">{{.Message}}</p>{{end}}
+    <section class="admin-grid">
+      <form class="card admin-form" method="post" action="/admin/services">
+        <h2>{{if .EditService.ID}}Izmena servisa{{else}}Novi servis{{end}}</h2>
+        <input type="hidden" name="id" value="{{.EditService.ID}}">
+        <label>Naziv<input type="text" name="name" value="{{.EditService.Name}}" required></label>
+        <label>Slug<input type="text" name="slug" value="{{.EditService.Slug}}"></label>
+        <label>Grad<input type="text" name="city" value="{{.EditService.City}}"></label>
+        <label>Adresa<input type="text" name="address" value="{{.EditService.Address}}"></label>
+        <label>Telefon<input type="text" name="phone" value="{{.EditService.Phone}}"></label>
+        <label>Email<input type="text" name="email" value="{{.EditService.Email}}"></label>
+        <label>Website<input type="text" name="website" value="{{.EditService.Website}}"></label>
+        <label>Opis<textarea name="description" rows="4">{{.EditService.Description}}</textarea></label>
+        <label>Specijalnosti<input type="text" name="specialties" value="{{.EditService.Specialties}}"></label>
+        <label>Radno vreme<input type="text" name="working_hours" value="{{.EditService.WorkingHours}}"></label>
+        <label>Latitude<input type="text" name="lat" value="{{.EditService.Lat}}"></label>
+        <label>Longitude<input type="text" name="lng" value="{{.EditService.Lng}}"></label>
+        <label>Glavna slika URL<input type="text" name="image_url" value="{{.EditService.ImageURL}}"></label>
+        <label>Marke (odvojene zarezom)<input type="text" name="brands" value="{{join .EditService.Brands ", "}}"></label>
+        <label>Pogodnosti (odvojene zarezom)<input type="text" name="amenities" value="{{join .EditService.Amenities ", "}}"></label>
+        <label>Usluge po redu `naziv | cena`
+          <textarea name="offerings" rows="5">{{range .EditService.Offerings}}{{.Name}} | {{.PriceFrom}}
+{{end}}</textarea>
+        </label>
+        <label>Galerija URL po redu
+          <textarea name="gallery" rows="4">{{range .EditService.Gallery}}{{.}}
+{{end}}</textarea>
+        </label>
+        <label class="checkbox"><input type="checkbox" name="featured" {{if .EditService.Featured}}checked{{end}}> Istakni servis</label>
+        <button type="submit">Sacuvaj servis</button>
+      </form>
+      <section class="card">
+        <h2>Postojeci servisi</h2>
+        <div class="admin-list">
+          {{range .Services}}
+          <article>
+            <div>
+              <strong>{{.Name}}</strong>
+              <span>{{.City}} | {{printf "%.1f" .Rating}} / 5</span>
+            </div>
+            <a class="text-link" href="/admin/services?edit={{.ID}}">Izmeni</a>
+          </article>
+          {{end}}
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

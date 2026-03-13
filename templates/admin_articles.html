@@ -1,0 +1,57 @@
+{{define "admin_articles.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <a class="brand" href="/">AutoSlot</a>
+    <a class="{{if eq .Section "services"}}active{{end}}" href="/admin/services">Servisi</a>
+    <a class="{{if eq .Section "articles"}}active{{end}}" href="/admin/articles">Saveti</a>
+    <a class="{{if eq .Section "models"}}active{{end}}" href="/admin/models">Modeli</a>
+    <a class="{{if eq .Section "reviews"}}active{{end}}" href="/admin/reviews">Recenzije</a>
+  </aside>
+  <main class="admin-main">
+    <section class="admin-top">
+      <div><h1>Tekstovi i saveti</h1><p>Dodaj clanak koji donosi organski saobracaj i gradi poverenje.</p></div>
+      <a class="button-secondary" href="/articles">Javni portal</a>
+    </section>
+    {{if .Message}}<p class="notice">{{.Message}}</p>{{end}}
+    <section class="admin-grid">
+      <form class="card admin-form" method="post" action="/admin/articles">
+        <h2>{{if .EditArticle.ID}}Izmena teksta{{else}}Novi tekst{{end}}</h2>
+        <input type="hidden" name="id" value="{{.EditArticle.ID}}">
+        <label>Naslov<input type="text" name="title" value="{{.EditArticle.Title}}" required></label>
+        <label>Slug<input type="text" name="slug" value="{{.EditArticle.Slug}}"></label>
+        <label>Kategorija<input type="text" name="category" value="{{.EditArticle.Category}}"></label>
+        <label>Read time<input type="text" name="read_time" value="{{.EditArticle.ReadTime}}" placeholder="5 min"></label>
+        <label>Datum objave<input type="date" name="published_at" value="{{if .EditArticle.ID}}{{.EditArticle.PublishedAt.Format "2006-01-02"}}{{else}}{{.Today}}{{end}}"></label>
+        <label>Slika URL<input type="text" name="image_url" value="{{.EditArticle.ImageURL}}"></label>
+        <label>Uvod<textarea name="excerpt" rows="3">{{.EditArticle.Excerpt}}</textarea></label>
+        <label>Telo teksta<textarea name="body" rows="12">{{.EditArticle.RawBody}}</textarea></label>
+        <label class="checkbox"><input type="checkbox" name="featured" {{if .EditArticle.Featured}}checked{{end}}> Istakni tekst</label>
+        <button type="submit">Sacuvaj tekst</button>
+      </form>
+      <section class="card">
+        <h2>Postojeci tekstovi</h2>
+        <div class="admin-list">
+          {{range .Articles}}
+          <article>
+            <div>
+              <strong>{{.Title}}</strong>
+              <span>{{.Category}} | {{formatDate .PublishedAt}}</span>
+            </div>
+            <a class="text-link" href="/admin/articles?edit={{.ID}}">Izmeni</a>
+          </article>
+          {{end}}
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

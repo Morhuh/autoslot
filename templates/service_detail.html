@@ -1,0 +1,112 @@
+{{define "service_detail.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">AutoSlot</a>
+    <nav>
+      <a href="/services">Servisi</a>
+      <a href="/models">Modeli</a>
+      <a href="/articles">Saveti</a>
+      <a href="/admin/services">Admin</a>
+    </nav>
+  </header>
+  <main class="page-shell">
+    <section class="service-hero card">
+      <div class="detail-image" style="background-image:url('{{.Service.ImageURL}}')"></div>
+      <div>
+        <span class="eyebrow">{{.Service.City}}</span>
+        <h1>{{.Service.Name}}</h1>
+        <p>{{.Service.Description}}</p>
+        <div class="service-meta">
+          <span>{{printf "%.1f" .Service.Rating}} / 5</span>
+          <span>{{.Service.ReviewCount}} recenzija</span>
+          <span>{{.Service.WorkingHours}}</span>
+        </div>
+        <div class="tags">{{range .Service.Brands}}<span>{{.}}</span>{{end}}{{range .Service.Amenities}}<span>{{.}}</span>{{end}}</div>
+      </div>
+    </section>
+
+    <section class="detail-grid">
+      <article class="card">
+        <h2>Kontakt i lokacija</h2>
+        <p><strong>Adresa:</strong> {{.Service.Address}}</p>
+        <p><strong>Telefon:</strong> {{.Service.Phone}}</p>
+        <p><strong>Email:</strong> {{.Service.Email}}</p>
+        <p><strong>Sajt:</strong> <a class="text-link" href="{{.Service.Website}}" target="_blank" rel="noreferrer">{{.Service.Website}}</a></p>
+        <p><strong>Radno vreme:</strong> {{.Service.WorkingHours}}</p>
+      </article>
+      <article class="card">
+        <h2>Usluge</h2>
+        <div class="price-list">
+          {{range .Service.Offerings}}
+          <div><span>{{.Name}}</span><strong>{{.PriceFrom}}</strong></div>
+          {{end}}
+        </div>
+      </article>
+    </section>
+
+    {{if .Service.Gallery}}
+    <section class="gallery-grid">
+      {{range .Service.Gallery}}
+      <div class="gallery-shot" style="background-image:url('{{.}}')"></div>
+      {{end}}
+    </section>
+    {{end}}
+
+    <section class="reviews-block">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Recenzije</span>
+          <h2>Iskustva korisnika</h2>
+        </div>
+      </div>
+      <div class="reviews-grid">
+        <div>
+          {{range .Service.Reviews}}
+          <article class="card review-card">
+            <div class="service-meta">
+              <span>{{.AuthorName}}</span>
+              <span>{{stars .Rating}}</span>
+              <span>{{formatDate .CreatedAt}}</span>
+            </div>
+            <h3>{{.Title}}</h3>
+            <p>{{.Comment}}</p>
+            <div class="score-row">
+              <span>Brzina {{.SpeedRating}}/5</span>
+              <span>Cena {{.PriceRating}}/5</span>
+              <span>Kvalitet {{.QualityRating}}/5</span>
+              <span>Ljubaznost {{.KindnessRating}}/5</span>
+            </div>
+          </article>
+          {{else}}
+          <article class="card review-card"><p>Jos nema odobrenih recenzija za ovaj servis.</p></article>
+          {{end}}
+        </div>
+        <form class="card review-form" action="/services/{{.Service.Slug}}/reviews" method="post">
+          <h2>Ostavi recenziju</h2>
+          {{if .ReviewSubmitted}}<p class="notice">Hvala. Recenzija je poslata na moderaciju.</p>{{end}}
+          <label>Ime i prezime<input type="text" name="author_name" required></label>
+          <label>Naslov<input type="text" name="title"></label>
+          <label>Komentar<textarea name="comment" rows="5" required></textarea></label>
+          <div class="rating-grid">
+            <label>Ukupna ocena<input type="number" min="1" max="5" name="rating" required></label>
+            <label>Brzina<input type="number" min="1" max="5" name="speed_rating"></label>
+            <label>Cena<input type="number" min="1" max="5" name="price_rating"></label>
+            <label>Kvalitet<input type="number" min="1" max="5" name="quality_rating"></label>
+            <label>Ljubaznost<input type="number" min="1" max="5" name="kindness_rating"></label>
+          </div>
+          <button type="submit">Posalji recenziju</button>
+        </form>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

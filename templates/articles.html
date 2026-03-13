@@ -1,0 +1,43 @@
+{{define "articles.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">AutoSlot</a>
+    <nav>
+      <a href="/services">Servisi</a>
+      <a href="/models">Modeli</a>
+      <a href="/articles">Saveti</a>
+      <a href="/admin/services">Admin</a>
+    </nav>
+  </header>
+  <main class="page-shell">
+    <section class="page-title">
+      <span class="eyebrow">Portal za vozace</span>
+      <h1>Saveti i osnovne informacije</h1>
+      <p>Sadrzaj koji platformu pretvara u korisno dnevno odrediste, ne samo u imenik.</p>
+    </section>
+    <section class="card-grid">
+      {{range .Articles}}
+      <article class="mini-card card">
+        <span class="pill">{{.Category}}</span>
+        <h2>{{.Title}}</h2>
+        <p>{{.Excerpt}}</p>
+        <div class="service-meta">
+          <span>{{.ReadTime}}</span>
+          <span>{{formatDate .PublishedAt}}</span>
+        </div>
+        <a class="text-link" href="/articles/{{.Slug}}">Procitaj tekst</a>
+      </article>
+      {{end}}
+    </section>
+  </main>
+</body>
+</html>
+{{end}}

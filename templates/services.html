@@ -1,0 +1,76 @@
+{{define "services.html"}}
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">AutoSlot</a>
+    <nav>
+      <a href="/services">Servisi</a>
+      <a href="/models">Modeli</a>
+      <a href="/articles">Saveti</a>
+      <a href="/admin/services">Admin</a>
+    </nav>
+  </header>
+  <main class="page-shell">
+    <section class="page-title">
+      <span class="eyebrow">Direktorijum</span>
+      <h1>Auto-servisi</h1>
+      <p>Filtriraj po gradu, marki, tipu usluge i minimalnoj oceni.</p>
+    </section>
+    <section class="filters card">
+      <form class="filters-grid" method="get" action="/services">
+        <input type="text" name="q" value="{{.Query}}" placeholder="Naziv servisa, opis ili problem">
+        <select name="city">
+          <option value="">Svi gradovi</option>
+          {{range .Cities}}<option value="{{.}}" {{if eq $.City .}}selected{{end}}>{{.}}</option>{{end}}
+        </select>
+        <select name="brand">
+          <option value="">Sve marke</option>
+          {{range .Brands}}<option value="{{.}}" {{if eq $.Brand .}}selected{{end}}>{{.}}</option>{{end}}
+        </select>
+        <select name="service">
+          <option value="">Sve usluge</option>
+          {{range .ServiceTypes}}<option value="{{.}}" {{if eq $.ServiceType .}}selected{{end}}>{{.}}</option>{{end}}
+        </select>
+        <select name="min_rating">
+          <option value="">Sve ocene</option>
+          <option value="4" {{if eq .MinRating "4"}}selected{{end}}>4+</option>
+          <option value="4.5" {{if eq .MinRating "4.5"}}selected{{end}}>4.5+</option>
+        </select>
+        <button type="submit">Primeni filtere</button>
+      </form>
+    </section>
+    <p class="result-count">Pronadjeno servisa: {{.TotalServices}}</p>
+    <section class="listing-grid">
+      {{range .Services}}
+      <article class="service-listing card">
+        <div class="service-image" style="background-image:url('{{.ImageURL}}')"></div>
+        <div class="listing-content">
+          <div class="service-meta">
+            <span>{{.City}}</span>
+            <span>{{printf "%.1f" .Rating}} / 5 ({{.ReviewCount}})</span>
+          </div>
+          <h2>{{.Name}}</h2>
+          <p>{{.Description}}</p>
+          <p><strong>Specijalnost:</strong> {{.Specialties}}</p>
+          <div class="tags">{{range .Offerings}}<span>{{.Name}}</span>{{end}}</div>
+          <a class="button-secondary" href="/services/{{.Slug}}">Detalji servisa</a>
+        </div>
+      </article>
+      {{else}}
+      <article class="card empty-state">
+        <h2>Nema rezultata za zadate filtere</h2>
+        <p>Probaj siri upit ili unesi nove servise kroz admin panel.</p>
+      </article>
+      {{end}}
+    </section>
+  </main>
+</body>
+</html>
+{{end}}
